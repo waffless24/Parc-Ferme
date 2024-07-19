@@ -344,6 +344,9 @@ class ui(QMainWindow):
         self.lap_sel2.currentIndexChanged.connect(lambda: self.load_compare_data(1))
         self.lap_sel3.currentIndexChanged.connect(lambda: self.load_compare_data(2))
 
+        # Exporting Data
+        self.export_data.clicked.connect(self.export)
+
     def switch_tabs(self):
         id = self.tabs.checkedId()
         self.stackedWidget.setCurrentIndex(id)
@@ -390,6 +393,14 @@ class ui(QMainWindow):
         self.ngear2p.setLabel('left', 'nGear')
         self.ngear2p.setLabel('bottom', 'Distance', units ='km')
 
+        self.drs1p_legend = self.drs1p.addLegend()
+        self.drs1p.setLabel('left', 'DRS')
+        self.drs1p.setLabel('bottom', 'Distance', units ='km')
+
+        self.drs2p_legend = self.drs2p.addLegend()
+        self.drs2p.setLabel('left', 'DRS')
+        self.drs2p.setLabel('bottom', 'Distance', units ='km')
+
     # Clearing all the data loaded while switching Sessions, Weekends, or Seasons
     def clear_data(self):
         self.driver1.clear()
@@ -409,18 +420,23 @@ class ui(QMainWindow):
         self.brake2p.clear()
         self.ngear1p.clear()
         self.ngear2p.clear()
+        self.drs1p.clear()
+        self.drs2p.clear()
 
         self.speed_tel1 = ['','','']
         self.brake_tel1 = ['','','']
         self.rpm_tel1 = ['','','']
         self.throttle_tel1 = ['','','']
         self.ngear_tel1 = ['','','']
+        self.drs_tel1 = ['','','']
 
         self.speed_tel2 = ['','','']
         self.brake_tel2 = ['','','']
         self.rpm_tel2 = ['','','']
         self.throttle_tel2 = ['','','']
         self.ngear_tel2 = ['','','']
+        self.drs_tel2 = ['','','']
+
         self.driver_laptimes = ['','','']
         self.driver_laps = ['','','']
         self.driver_sector1_times = ['','','']
@@ -479,6 +495,11 @@ class ui(QMainWindow):
         self.ngear1p_legend.removeItem(self.ngear_tel1[id])
         self.ngear_tel2[id].clear()
         self.ngear2p_legend.removeItem(self.ngear_tel2[id])
+
+        self.drs_tel1[id].clear()
+        self.drs1p_legend.removeItem(self.drs_tel1[id])
+        self.drs_tel2[id].clear()
+        self.drs2p_legend.removeItem(self.drs_tel2[id])
 
         self.driver_colors_disp[id].setStyleSheet('background-color: rgb(30,30,30)')
 
@@ -996,6 +1017,22 @@ class ui(QMainWindow):
                     self.deltap.addItem(text)
                     text.setPos(corners['Distance'] + 10, 0.02)
 
+                    corner_line = pg.InfiniteLine(pos = corners['Distance'], angle = 90, movable= False, pen = 'grey')
+                    text = f"{corners['Number']}{corners['Letter']}"
+                    text = pg.TextItem(text, color= 'grey')
+                    corner_line.setPen(width = 0.5, style = Qt.DotLine)
+                    self.drs1p.addItem(corner_line)
+                    self.drs1p.addItem(text)
+                    text.setPos(corners['Distance'] + 10, 0.02)
+
+                    corner_line = pg.InfiniteLine(pos = corners['Distance'], angle = 90, movable= False, pen = 'grey')
+                    text = f"{corners['Number']}{corners['Letter']}"
+                    text = pg.TextItem(text, color= 'grey')
+                    corner_line.setPen(width = 0.5, style = Qt.DotLine)
+                    self.drs2p.addItem(corner_line)
+                    self.drs2p.addItem(text)
+                    text.setPos(corners['Distance'] + 10, 0.02)
+
     '''
     Plotting the driver Telemetry for the given lap
         id: index for which driver is being updated
@@ -1042,12 +1079,14 @@ class ui(QMainWindow):
             self.rpm_tel1[id] = self.rpm1p.plot(driver_tel['Distance'], driver_tel['RPM'], pen = pg.mkPen(driv_color, width= 2.5), name=driver_name)
             self.throttle_tel1[id] = self.throttle1p.plot(driver_tel['Distance'], driver_tel['Throttle'], pen = pg.mkPen(driv_color, width= 2.5), name=driver_name)
             self.ngear_tel1[id] = self.ngear1p.plot(driver_tel['Distance'], driver_tel['nGear'], pen = pg.mkPen(driv_color, width= 2.5), name=driver_name)
+            self.drs_tel1[id] = self.drs1p.plot(driver_tel['Distance'], driver_tel['DRS'], pen = pg.mkPen(driv_color, width= 2.5), name=driver_name)
 
             self.speed_tel2[id] = self.speed2p.plot(driver_tel['Distance'], driver_tel['Speed'], pen = pg.mkPen(driv_color, width= 2.5), name=driver_name)
             self.brake_tel2[id] = self.brake2p.plot(driver_tel['Distance'], driver_tel['Brake'], pen = pg.mkPen(driv_color, width= 2.5), name=driver_name)
             self.rpm_tel2[id] = self.rpm2p.plot(driver_tel['Distance'], driver_tel['RPM'], pen = pg.mkPen(driv_color, width= 2.5), name=driver_name)
             self.throttle_tel2[id] = self.throttle2p.plot(driver_tel['Distance'], driver_tel['Throttle'], pen = pg.mkPen(driv_color, width= 2.5), name=driver_name)
             self.ngear_tel2[id] = self.ngear2p.plot(driver_tel['Distance'], driver_tel['nGear'], pen = pg.mkPen(driv_color, width= 2.5), name=driver_name)
+            self.drs_tel2[id] = self.drs2p.plot(driver_tel['Distance'], driver_tel['DRS'], pen = pg.mkPen(driv_color, width= 2.5), name=driver_name)
 
             # Setting the telemetry plot dimensions and scrollable limits
             self.speed1p.getViewBox().setLimits(xMin=0, xMax=max_d, yMin=0, yMax=360)
@@ -1060,6 +1099,8 @@ class ui(QMainWindow):
             self.throttle2p.getViewBox().setLimits(xMin=0, xMax=max_d, yMin=0, yMax=110)
             self.ngear1p.getViewBox().setLimits(xMin=0, xMax=max_d, yMin=0, yMax=8.5)
             self.ngear2p.getViewBox().setLimits(xMin=0, xMax=max_d, yMin=0, yMax=8.5)
+            self.drs1p.getViewBox().setLimits(xMin=0, xMax=max_d, yMin=7.5, yMax=14.5)
+            self.drs2p.getViewBox().setLimits(xMin=0, xMax=max_d, yMin=7.5, yMax=14.5)
 
     '''
     Plotting the driver delta time
@@ -1313,6 +1354,57 @@ class ui(QMainWindow):
                 temp = re.findall(r'\b\d+\b', self.drivers[i])
                 self.drivers[i] = temp[0].lstrip("0") 
 
+    # Exporting Data
+    def export(self):
+        directory = 'exports/' + str(self.year) + '_' + self.grand_prix + '_' + self.session_name
+        os.makedirs(directory, exist_ok=True)
+
+        if self.session_results_exp.isChecked():
+            self.current_session.results.to_csv(directory + '/session_results.csv')
+
+        if self.circuit_info_exp.isChecked():
+            self.circuit_info.corners.to_csv(directory + '/circuit_corners.csv')
+            self.circuit_info.marshal_lights.to_csv(directory + '/circuit_marshal_lights.csv')
+            self.circuit_info.marshal_sectors.to_csv(directory + '/circuit_marshal_sectors.csv')
+
+            # Converting Track Rotation into a single element dataframe
+            rotation = pd.DataFrame(columns= ['TrackRotation'])
+            rotation.loc[0] = self.circuit_info.rotation
+            rotation.to_csv(directory + '/circuit_rotation.csv')
+
+        # Checking if a driver telemetry data has been loaded
+        is_enabled1 = self.lap_sel1.isEnabled()
+        is_enabled2 = self.lap_sel2.isEnabled()
+        is_enabled3 = self.lap_sel3.isEnabled()
+        is_enabled = (is_enabled1 or is_enabled2 or is_enabled3)
+
+        if is_enabled:
+            lap_directory = directory + '/driver_laps'
+            os.makedirs(lap_directory, exist_ok=True)
+            for i in range(len(self.drivers)):
+                if self.laps[i] == '':
+                    continue
+                lap_data = self.driver_laps[i]
+                driver_name = lap_data['Driver']
+                lap_number = int(lap_data['LapNumber'])
+                temp_lap = self.current_session.laps.pick_driver(self.drivers[i]).pick_wo_box().pick_fastest()
+                weather = lap_data.get_weather_data()
+                telemetry = lap_data.get_telemetry()
+
+                if temp_lap['LapNumber'] == lap_number:
+                    lap = str(lap_number) + '_personalBest'              
+                else:
+                    lap = str(lap_number)
+                
+                if self.lap_data_exp.isChecked():
+                    lap_data.to_csv(lap_directory + '/'+ driver_name + '_'+ lap + '.csv')
+                
+                if self.weather_exp.isChecked():
+                    weather.to_csv(lap_directory + '/'+ driver_name + '_'+ lap + '_weatherData.csv')
+                
+                if self.telemetry_data_exp.isChecked():
+                    telemetry.to_csv(lap_directory + '/'+ driver_name + '_'+ lap + '_telemetry.csv')
+
 # Checking for Internet connection for enablement of offline cache
 def check_internet_connection():
     remote_server = "www.google.com"
@@ -1329,10 +1421,14 @@ def check_internet_connection():
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    # Setting UI quality factors
     QtGui.QFontDatabase.addApplicationFont("/Users/niratpai/Library/Fonts/Formula1.ttf")
     os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "5"
     os.environ["QT_SCALE_FACTOR"] = '1.25'
     app.setAttribute(Qt.AA_UseHighDpiPixmaps)
+
+    # Loading App CSS & style
     qss="app_style.qss"
     with open(qss,"r") as fh:
         app.setStyleSheet(fh.read())
