@@ -8,22 +8,22 @@
 	border: none;
 }
 
-.tiles QScrollBar {
+QScrollArea QScrollBar {
 	background-color: #171718;
 }
 
-.tiles QScrollBar:handle {
+QScrollArea QScrollBar:handle {
 	background-color: #1e1e1f;
 	max-height: 50px;
 	border-radius: 6px;
 }
 
-.tiles QScrollBar::add-line:vertical {
+QScrollArea QScrollBar::add-line:vertical {
 	border: none;
 	background: none;
 }
 
-.tiles QScrollBar::sub-line:vertical {
+QScrollArea QScrollBar::sub-line:vertical {
 	border: none;
 	background: none;
 }
@@ -260,4 +260,16 @@ QToolButton{
 QLabel{
     background: #171718;
     color: #fdfffc;
+}
+
+#driv_color1{
+    background: #28282a;
+}
+
+#driv_color2{
+    background: #28282a;
+}
+
+#driv_color3{
+    background: #28282a;
 }
