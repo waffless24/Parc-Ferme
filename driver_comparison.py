@@ -1,4 +1,4 @@
-''' ALL APP LIBRARY IMPORTS AND MODIFICATIONS'''
+''' UI LIBRARIES'''
 # PyQt5
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStyledItemDelegate
 from PyQt5.QtGui import *
@@ -216,6 +216,7 @@ class UI_driver(QWidget):
         self.driver3.currentIndexChanged.connect(lambda: self.laps_select(2))
 
         # Clearing Driver Data
+        self.clear_signal = False
         self.clear1.clicked.connect(lambda: self.clear_driver(0))
         self.clear2.clicked.connect(lambda: self.clear_driver(1))
         self.clear3.clicked.connect(lambda: self.clear_driver(2))
@@ -226,6 +227,7 @@ class UI_driver(QWidget):
         self.fast3.clicked.connect(lambda: self.set_fastest_lap(2))   
         
         # Initializing Matrices
+        self.laps = ['','','']
         self.speed_tel1 = ['','','']
         self.brake_tel1 = ['','','']
         self.rpm_tel1 = ['','','']
@@ -302,21 +304,15 @@ class UI_driver(QWidget):
         self.drs2p.setLabel('left', 'DRS')
         self.drs2p.setLabel('bottom', 'Distance', units ='km')
 
-    def disable_drivers(self):
+    def disable_drivers(self, initial_load: bool):
+        self.initial_load = initial_load
+
         self.driver1.clear()
         self.driver2.clear()
         self.driver3.clear()
         self.lap_sel1.clear()
         self.lap_sel2.clear()
         self.lap_sel3.clear()
-
-        self.driver1.setEnabled(False)
-        self.driver2.setEnabled(False)
-        self.driver3.setEnabled(False)
-        self.clear1.setEnabled(False)
-        self.clear2.setEnabled(False)
-        self.clear3.setEnabled(False)
-
         self.speed1p.clear()
         self.speed2p.clear()
         self.rpm1p.clear()
@@ -329,6 +325,51 @@ class UI_driver(QWidget):
         self.ngear2p.clear()
         self.drs1p.clear()
         self.drs2p.clear()
+        self.deltap.clear()
+
+        self.speed_tel1 = ['','','']
+        self.brake_tel1 = ['','','']
+        self.rpm_tel1 = ['','','']
+        self.throttle_tel1 = ['','','']
+        self.ngear_tel1 = ['','','']
+        self.drs_tel1 = ['','','']
+
+        self.speed_tel2 = ['','','']
+        self.brake_tel2 = ['','','']
+        self.rpm_tel2 = ['','','']
+        self.throttle_tel2 = ['','','']
+        self.ngear_tel2 = ['','','']
+        self.drs_tel2 = ['','','']
+
+        self.driver_laptimes = ['','','']
+        self.driver_laps = ['','','']
+        self.driver_sector1_times = ['','','']
+        self.driver_sector2_times = ['','','']
+        self.driver_sector3_times = ['','','']
+        self.tyre_compounds = ['','','']
+
+        self.driver1_compound.setIcon(QIcon())
+        self.driver2_compound.setIcon(QIcon())
+        self.driver3_compound.setIcon(QIcon())
+
+        self.track_dom_canvas.clear_visual()
+        self.track_dom_canvas.can.draw()
+
+        for id in range(3):
+            self.driver_colors_disp[id].setStyleSheet('background-color: #28282a')
+            self.driver_laptimes_disp[id].clear()
+            self.driver_sector1_disp[id].clear()
+            self.driver_sector2_disp[id].clear()
+            self.driver_sector3_disp[id].clear()
+        
+        self.driver1.setEnabled(False)
+        self.driver2.setEnabled(False)
+        self.driver3.setEnabled(False)
+        self.clear1.setEnabled(False)
+        self.clear2.setEnabled(False)
+        self.clear3.setEnabled(False)
+
+        self.initial_load = False
     
     def enable_drivers(self):
         self.driver1.setEnabled(True)
@@ -338,10 +379,10 @@ class UI_driver(QWidget):
         self.clear2.setEnabled(True)
         self.clear3.setEnabled(True)
     
-    def receive_parameters(self, current_session, circuit_info):
+    def receive_parameters(self, current_session, circuit_info, initial_load):
         self.current_session = current_session
         self.circuit_info = circuit_info
-
+        self.initial_load = initial_load
         self.drivers_select()
     
     # Adding Drivers from the selected Session to combo box
@@ -547,6 +588,7 @@ class UI_driver(QWidget):
         id: index for which driver is being cleared
     '''
     def clear_driver_data(self, id):
+        self.laps[id] = ''
         self.driver_laptimes_disp[id].clear()
         self.driver_sector1_disp[id].clear()
         self.driver_sector2_disp[id].clear()
@@ -607,11 +649,14 @@ class UI_driver(QWidget):
         Displaying the Track Domination based on selected Laps
     '''
     def load_compare_data(self, id):
+       
+        if self.initial_load:
+            return
 
         # Clearing driver data only if plotted prior
         if not self.speed_tel1[id] == '':
             self.clear_driver_data(id)
-
+        
         event = ff1.get_event(self.current_session.date.year, self.current_session.event['EventName'])
 
         # Finding the maximum circuit distance from geojson data
@@ -628,6 +673,7 @@ class UI_driver(QWidget):
         self.plot_delta()
         self.plot_corner_points()
         self.plot_track_domination()
+
         print(self.drivers)
         print(self.laps)
         print(self.tyre_compounds)

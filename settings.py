@@ -1,4 +1,4 @@
-''' ALL APP LIBRARY IMPORTS AND MODIFICATIONS'''
+''' UI LIBRARIES'''
 # PyQt5
 from PyQt5.QtWidgets import QWidget
 import PyQt5.uic as uic 

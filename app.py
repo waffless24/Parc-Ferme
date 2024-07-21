@@ -153,7 +153,7 @@ class ui(QMainWindow):
         id = self.tabs.checkedId()
         self.stackedWidget.setCurrentIndex(id)  
     
-        # Filling the combo box with the list of Grand-Prix's of the selected Season
+    # Filling the combo box with the list of Grand-Prix's of the selected Season
     def weekend_enable(self):
         self.export_data.setEnabled(False)
         self.grandprix_select.clear()
@@ -202,7 +202,7 @@ class ui(QMainWindow):
 
     def load(self):
         if self.session_select.currentIndex() == -1:
-            self.driver_comparison.disable_drivers()
+            self.driver_comparison.disable_drivers(True)
             return
         
         self.export_data.setEnabled(True)
@@ -211,7 +211,7 @@ class ui(QMainWindow):
         self.current_session.load()
         self.circuit_info = self.current_session.get_circuit_info()
 
-        self.driver_comparison.receive_parameters(self.current_session, self.circuit_info)
+        self.driver_comparison.receive_parameters(self.current_session, self.circuit_info, False)
 
     # Exporting Data
     def export(self):
@@ -219,12 +219,12 @@ class ui(QMainWindow):
         os.makedirs(directory, exist_ok=True)
 
         if self.session_results_exp.isChecked():
-            self.driver_comparison.current_session.results.to_csv(directory + '/session_results.csv')
+            self.current_session.results.to_csv(directory + '/session_results.csv')
 
         if self.circuit_info_exp.isChecked():
-            self.driver_comparison.circuit_info.corners.to_csv(directory + '/circuit_corners.csv')
-            self.driver_comparison.circuit_info.marshal_lights.to_csv(directory + '/circuit_marshal_lights.csv')
-            self.driver_comparison.circuit_info.marshal_sectors.to_csv(directory + '/circuit_marshal_sectors.csv')
+            self.circuit_info.corners.to_csv(directory + '/circuit_corners.csv')
+            self.circuit_info.marshal_lights.to_csv(directory + '/circuit_marshal_lights.csv')
+            self.circuit_info.marshal_sectors.to_csv(directory + '/circuit_marshal_sectors.csv')
 
             # Converting Track Rotation into a single element dataframe
             rotation = pd.DataFrame(columns= ['TrackRotation'])
