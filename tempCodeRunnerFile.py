@@ -1,0 +1,1 @@
+pg.setConfigOption('background', '#1e1e1f')

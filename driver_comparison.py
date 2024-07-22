@@ -25,156 +25,6 @@ import pandas as pd
 import re
 from scipy import interpolate 
 
-# Custom widget container for all matplotlib graphs involving the Track Layout
-class SpeedVis(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        '''
-        General plot parameters for every occurence of matplotlib widget integration
-        '''
-        self.fig = Figure(figsize=(10, 5))       
-        self.can = FigureCanvas(self.fig)
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.can)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        self.fig.set_facecolor('#171718')
-        self.ax = self.fig.add_subplot()
-        self.ax.set_xticklabels([])
-        self.ax.set_yticklabels([])
-        self.ax.set_facecolor('#171718')
-        self.ax.tick_params(left = False, bottom = False)
-        plt.setp(self.ax.spines.values(), lw=0)
-        self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0.1)
-
-    '''
-    Plotting the speed visualization for a given lap
-    [Code taken from: 
-        https://docs.fastf1.dev/examples_gallery/plot_speed_on_track.html#sphx-glr-examples-gallery-plot-speed-on-track-py]
-    '''
-    def plot_visual(self, lap):
-        colormap = mpl.cm.plasma                # selecting colormap for speed visualization
-        self.x = lap.telemetry['X']             # values for x-axis
-        self.y = lap.telemetry['Y']             # values for y-axis
-        color = lap.telemetry['Speed']          # value to base color gradient on
-        points = np.array([self.x, self.y]).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
-
-        # Creating solid black background track line
-        self.plot = self.ax.plot(lap.telemetry['X'], lap.telemetry['Y'],
-                color='black', linestyle='-', linewidth=8, zorder=0)
-
-        # Creating a continuous normalization to map data points to colors
-        norm = plt.Normalize(color.min(), color.max())
-        lc = LineCollection(segments, cmap=colormap, norm=norm, linestyle='-', linewidth=2)
-
-        # Setting the values used for colormapping
-        lc.set_array(color)
-
-        # Merging all line segments together
-        self.ax.add_collection(lc)
-
-        # Setting the colorbar as the legend
-        self.cbaxes = self.fig.add_axes([0.25, 0.1, 0.5, 0.05])
-        normlegend = mpl.colors.Normalize(vmin=color.min(), vmax=color.max())
-        self.legend = mpl.colorbar.ColorbarBase(self.cbaxes, norm=normlegend, cmap=colormap, orientation="horizontal")
-        self.ax.set_facecolor('#171718')
-        self.ax.axis('equal')
-
-    '''
-    Plotting the track domination for a given set of drivers
-    References the code for plotting the Gear Shifts Visualization on track from FastF1:
-        https://docs.fastf1.dev/examples_gallery/plot_gear_shifts_on_track.html
-    '''
-    def plot_dom(self, telemetry, driver_numbers, driver_colors):
-        x = np.array(telemetry['X'].values)
-        y = np.array(telemetry['Y'].values)
-
-        points = np.array([x, y]).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        fastest_driver_array = telemetry['Fastest_driver'].to_numpy().astype(float)
-
-        driver_numbers = [float(driver_numbers) for driver_numbers in driver_numbers]
-        #driver_numbers = [i for i in driver_numbers if i != 0]
-        swap_index = np.argsort(driver_numbers)
-        driver_numbers = sorted(driver_numbers)
-
-        # fix sorting colors
-        temp_array = driver_colors.copy() 
-        for i, color in enumerate(driver_colors):
-            temp_array[i] = driver_colors[swap_index[i]]
-
-        driver_colors = temp_array
-
-        if driver_colors[0] == 'white':
-            del driver_colors[0]
-        if driver_numbers[0] == 0:
-            del driver_numbers[0]
-
-        norm=plt.Normalize(min(driver_numbers),max(driver_numbers))
-        cmap_list = list(zip(map(norm, driver_numbers), driver_colors))
-        cmap = mpl.colors.LinearSegmentedColormap.from_list("", cmap_list)
-        lc_comp = LineCollection(segments,  cmap=cmap, linewidth=4)
-        lc_comp.set_array(fastest_driver_array)
-        lc_comp.set_linewidth(3)
-
-        self.ax.add_collection(lc_comp)
-        self.ax.set_facecolor('#171718')
-        self.ax.axis('equal')
-
-    '''
-    Plotting the corner markers for the track map
-    '''
-    def plot_corners(self, circuit_info):
-        # offset length chosen arbitrarily to 'look good'
-        offset_vector = [500, 0]
-
-        # Converting the rotation angle from degrees to radian.
-        track_angle = circuit_info.rotation / 180 * np.pi
-
-        # Iterating over all corners.
-        for _, corner in circuit_info.corners.iterrows():
-            # Create a string from corner number and letter
-            txt = f"{corner['Number']}{corner['Letter']}"
-
-            # Convert the angle from degrees to radian.
-            offset_angle = corner['Angle'] / 180 * np.pi
-
-            # Rotating the offset vector so that it points sideways from the track.
-            offset_x, offset_y = self.rotate(offset_vector, angle=offset_angle)
-
-            # Adding the offset to the position of the corner
-            text_x = corner['X'] + offset_x
-            text_y = corner['Y'] + offset_y
-
-            track_x = corner['X']
-            track_y = corner['Y']
-
-            # Encapsulating the text in a circle and pointing to the corner on track
-            self.ax.scatter(text_x, text_y, color='#464646', s=100)
-            self.ax.plot([track_x, text_x], [track_y, text_y], color='#464646')
-
-            self.ax.text(text_x, text_y, txt,
-                    va='center_baseline', ha='center', size='x-small', color='white')
-
-    def rotate(self, xy, *, angle):
-        rot_mat = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
-        return np.matmul(xy, rot_mat)
-
-    ''''
-    Function for clearing the figure for replotting [OR] for resetting all data
-    '''
-    def clear_visual(self):
-        self.fig.clear()
-        self.ax = self.fig.add_subplot()
-        self.ax.set_xticklabels([])
-        self.ax.set_yticklabels([])
-        self.ax.set_facecolor('#171718')
-        self.ax.tick_params(left = False, bottom = False)
-        plt.setp(self.ax.spines.values(), lw=0)
-        self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0.1)
-
 class UI_driver(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -202,12 +52,6 @@ class UI_driver(QWidget):
         self.driver_sector2_disp = [self.driver1_sector2, self.driver2_sector2, self.driver3_sector2]
         self.driver_sector3_disp = [self.driver1_sector3, self.driver2_sector3, self.driver3_sector3]
 
-        # Adding & setting all the Plot Layouts
-        self.track_dom_layout = QHBoxLayout()
-        self.track_dom_canvas = SpeedVis()
-        self.track_dom_layout.setContentsMargins(0,0,0,0)
-        self.track_dom_layout.addWidget(self.track_dom_canvas)
-        self.track_domination.setLayout(self.track_dom_layout)
         self.set_plot_displays()
 
         # Loading laps for each selected driver
@@ -304,6 +148,12 @@ class UI_driver(QWidget):
         self.drs2p.setLabel('left', 'DRS')
         self.drs2p.setLabel('bottom', 'Distance', units ='km')
 
+        self.track_dom_p.getPlotItem().hideAxis('bottom')
+        self.track_dom_p.getPlotItem().hideAxis('left')
+        self.track_dom_p.setAspectLocked()
+        self.track_dom_p.setMouseEnabled(x=True, y=False)
+        self.track_dom_p.setBackground('#171718')
+
     def disable_drivers(self, initial_load: bool):
         self.initial_load = initial_load
 
@@ -351,9 +201,6 @@ class UI_driver(QWidget):
         self.driver1_compound.setIcon(QIcon())
         self.driver2_compound.setIcon(QIcon())
         self.driver3_compound.setIcon(QIcon())
-
-        self.track_dom_canvas.clear_visual()
-        self.track_dom_canvas.can.draw()
 
         for id in range(3):
             self.driver_colors_disp[id].setStyleSheet('background-color: #28282a')
@@ -1152,35 +999,18 @@ class UI_driver(QWidget):
                             driver_tel['Distance'] = driver_tel['Distance'] + (temp_tel['Distance'].max() - driver_tel['Distance'].max())
                 
                 driver_tel['Driver'] = self.drivers[i]
+                driver_tel['DriverColor'] = driv_color
 
-                # Generating array of driver colors and driver numbers to be passed on to matplotlib for plotting
+                # Generating array of telemetry data
                 if i == 0:
                     telemetry = driver_tel
-                    driver_colors = [driv_color]
-                    driver_numbers = [self.drivers[i]]
                 else:
                     if driver_count == 0:
                         telemetry = driver_tel
                     else:
                         telemetry = telemetry._append(driver_tel)
-                    driver_colors.append(driv_color)
-
-                    if self.drivers[i] == driver_numbers[i-1]:
-                        driver_numbers.append(self.drivers[i] + '.1')
-                    elif self.drivers[i] == driver_numbers[i-2]:
-                        driver_numbers.append(self.drivers[i] + '.2')
-                    else:
-                        driver_numbers.append(self.drivers[i])
                 
                 driver_count = driver_count + 1
-            
-            else:
-                if i == 0:
-                    driver_colors = ['white']
-                    driver_numbers = ['0']
-                else:
-                    driver_colors.append('white')
-                    driver_numbers.append('0')
 
         if not (self.drivers == ['0', '0', '0'] or self.laps == ['','','']):
             # Generate equally sized mini-sectors 
@@ -1212,7 +1042,7 @@ class UI_driver(QWidget):
 
                 # Collapsing the dataframe into just a single entry for each driver
                 # [Done by finding the average speed carried through the minisector by the driver & resetting index]
-                msector_dom = filtered_data.groupby(['Minisector', 'Driver'])['Speed'].mean().reset_index()
+                msector_dom = filtered_data.groupby(['Minisector', 'Driver', 'DriverColor'])['Speed'].mean().reset_index()
 
                 # Generating driver array & delta time array for each minisector
                 for id in range(driver_count):
@@ -1232,16 +1062,21 @@ class UI_driver(QWidget):
 
             # Grouping by Minisector & selecting the minimum elapsed time for each
             fastest_driver = times.loc[times.groupby(['Minisector'])['Time'].idxmin()]
-
             # Getting rid of the speed column and renaming the driver column
-            fastest_driver = fastest_driver[['Minisector', 'Driver']].rename(columns={'Driver': 'Fastest_driver'})
-            # Joining the fastest driver per minisector with the full telemetry
-            telemetry = telemetry.merge(fastest_driver, on=['Minisector'])
-            # Order the data by distance to ensure matplotlib plotting compatibility
-            telemetry = telemetry.sort_values(by=['Distance'])
+            fastest_driver = fastest_driver[['Minisector', 'Driver', 'DriverColor']].rename(columns={'Driver': 'FastestDriver'})
 
-            # Plotting the data on the Track Domination widget
-            self.track_dom_canvas.clear_visual()
-            self.track_dom_canvas.plot_dom(telemetry, driver_numbers, driver_colors)
-            self.track_dom_canvas.plot_corners(self.circuit_info)
-            self.track_dom_canvas.can.draw()
+            track = telemetry.loc[:, ('X', 'Y')].to_numpy()
+            # Convert the rotation angle from degrees to radian.
+            track_angle = self.circuit_info.rotation / 180 * np.pi
+
+            # Rotate and plot the track map.
+            track = self.rotate(track, angle=track_angle)
+            track = np.array_split(track, num_minisectors)
+            self.track_dom_p.clear()
+            for i in range(num_minisectors):
+                self.track_dom_p.plot(track[i][:, 0], track[i][:, 1], pen = pg.mkPen(fastest_driver['DriverColor'].iloc[i] ,width= 8))
+
+    def rotate(self, xy, *, angle):
+        rot_mat = np.array([[np.cos(angle), np.sin(angle)],
+                            [-np.sin(angle), np.cos(angle)]])
+        return np.matmul(xy, rot_mat)

@@ -16,6 +16,7 @@ import os
 from datetime import timezone, timedelta
 import datetime
 import socket
+import threading
 
 # FastF1 API
 import fastf1 as ff1
@@ -61,8 +62,7 @@ class PixmapIconEngine(QIconEngine):
         super().__init__()
 
     def paint(self, painter: QPainter, rect: QRect, mode: QIcon.Mode, state: QIcon.State):
-        painter.setRenderHints(QPainter.Antialiasing |
-                               QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
         painter.drawImage(rect, QImage(self.iconPath))
 
     def pixmap(self, size: QSize, mode: QIcon.Mode, state: QIcon.State) -> QPixmap:

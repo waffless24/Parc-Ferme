@@ -50,7 +50,7 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-1789</y>
+        <y>-644</y>
         <width>1483</width>
         <height>2487</height>
        </rect>
@@ -883,34 +883,6 @@
          </property>
          <property name="text">
           <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="15" column="1" colspan="8">
-        <widget class="QFrame" name="track_domination">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>450</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>450</height>
-          </size>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">
-																QFrame{
-																	border: none;
-															}</string>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
          </property>
         </widget>
        </item>
@@ -1881,6 +1853,51 @@
          <property name="class" stdset="0">
           <string>button1</string>
          </property>
+        </widget>
+       </item>
+       <item row="15" column="1" colspan="8">
+        <widget class="QFrame" name="track_domination">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>450</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>450</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">
+																QFrame{
+																	border: none;
+															}</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="PlotWidget" name="track_dom_p" native="true"/>
+          </item>
+         </layout>
         </widget>
        </item>
       </layout>
