@@ -211,17 +211,19 @@ class ui(QMainWindow):
         self.current_session.load()
         self.circuit_info = self.current_session.get_circuit_info()
 
-        self.driver_comparison.receive_parameters(self.current_session, self.circuit_info, False)
+        t1 = threading.Thread(target=self.driver_comparison.receive_parameters, args=(self.current_session, self.circuit_info, False,))
+        t1.start()
+        t1.join()
 
     # Exporting Data
     def export(self):
         directory = 'exports/' + str(self.year) + '_' + self.grand_prix + '_' + self.session_name
         os.makedirs(directory, exist_ok=True)
 
-        if self.session_results_exp.isChecked():
+        if self.settings_page.session_results_exp.isChecked():
             self.current_session.results.to_csv(directory + '/session_results.csv')
 
-        if self.circuit_info_exp.isChecked():
+        if self.settings_page.circuit_info_exp.isChecked():
             self.circuit_info.corners.to_csv(directory + '/circuit_corners.csv')
             self.circuit_info.marshal_lights.to_csv(directory + '/circuit_marshal_lights.csv')
             self.circuit_info.marshal_sectors.to_csv(directory + '/circuit_marshal_sectors.csv')
@@ -246,7 +248,7 @@ class ui(QMainWindow):
                 lap_data = self.driver_comparison.driver_laps[i]
                 driver_name = lap_data['Driver']
                 lap_number = int(lap_data['LapNumber'])
-                temp_lap = self.driver_comparison.current_session.laps.pick_driver(self.drivers[i]).pick_wo_box().pick_fastest()
+                temp_lap = self.driver_comparison.current_session.laps.pick_driver(self.driver_comparison.drivers[i]).pick_wo_box().pick_fastest()
                 weather = lap_data.get_weather_data()
                 telemetry = lap_data.get_telemetry()
 
@@ -255,13 +257,13 @@ class ui(QMainWindow):
                 else:
                     lap = str(lap_number)
                 
-                if self.lap_data_exp.isChecked():
+                if self.settings_page.lap_data_exp.isChecked():
                     lap_data.to_csv(lap_directory + '/'+ driver_name + '_'+ lap + '.csv')
                 
-                if self.weather_exp.isChecked():
+                if self.settings_page.weather_exp.isChecked():
                     weather.to_csv(lap_directory + '/'+ driver_name + '_'+ lap + '_weatherData.csv')
                 
-                if self.telemetry_data_exp.isChecked():
+                if self.settings_page.telemetry_data_exp.isChecked():
                     telemetry.to_csv(lap_directory + '/'+ driver_name + '_'+ lap + '_telemetry.csv')
 
 # Checking for Internet connection for enablement of offline cache

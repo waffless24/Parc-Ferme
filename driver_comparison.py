@@ -153,6 +153,7 @@ class UI_driver(QWidget):
         self.track_dom_p.setAspectLocked()
         self.track_dom_p.setMouseEnabled(x=True, y=False)
         self.track_dom_p.setBackground('#171718')
+        self.track_dom_p.setAutoPan()
 
     def disable_drivers(self, initial_load: bool):
         self.initial_load = initial_load
@@ -176,6 +177,7 @@ class UI_driver(QWidget):
         self.drs1p.clear()
         self.drs2p.clear()
         self.deltap.clear()
+        self.track_dom_p.clear()
 
         self.speed_tel1 = ['','','']
         self.brake_tel1 = ['','','']
@@ -518,7 +520,7 @@ class UI_driver(QWidget):
         self.display_driv_color(id)
         self.plot_tel(id)
         self.plot_delta()
-        self.plot_corner_points()
+        self.plot_corner_markers()
         self.plot_track_domination()
 
         print(self.drivers)
@@ -652,7 +654,7 @@ class UI_driver(QWidget):
             self.driver3_compound.setIcon(tyre_compound_picture)
 
     # Plots the corner markers onto the telemetry display
-    def plot_corner_points(self):
+    def plot_corner_markers(self):
         if not self.drivers == ['0','0','0']:
             for _, corners in self.circuit_info.corners.iterrows():
                     corner_line = pg.InfiniteLine(pos = corners['Distance'], angle = 90, movable= False, pen = 'grey')
@@ -1066,17 +1068,51 @@ class UI_driver(QWidget):
             fastest_driver = fastest_driver[['Minisector', 'Driver', 'DriverColor']].rename(columns={'Driver': 'FastestDriver'})
 
             track = telemetry.loc[:, ('X', 'Y')].to_numpy()
+
             # Convert the rotation angle from degrees to radian.
             track_angle = self.circuit_info.rotation / 180 * np.pi
 
             # Rotate and plot the track map.
             track = self.rotate(track, angle=track_angle)
-            track = np.array_split(track, num_minisectors)
-            self.track_dom_p.clear()
-            for i in range(num_minisectors):
-                self.track_dom_p.plot(track[i][:, 0], track[i][:, 1], pen = pg.mkPen(fastest_driver['DriverColor'].iloc[i] ,width= 8))
 
+            # Adding Starting line marker
+            start_line = pg.ScatterPlotItem(size=20, pen = pg.mkPen('k' , width= 8), brush=pg.mkBrush(255, 255, 255), symbol = 'o')
+            start_line.addPoints([track[0][0]], [track[0][1]])
+
+            self.track_dom_p.clear()
+            track = np.array_split(track, num_minisectors)
+            for i in range(num_minisectors):
+                self.track_dom_p.plot(track[i][:, 0], track[i][:, 1], pen = pg.mkPen(fastest_driver['DriverColor'].iloc[i] ,width= 15))
+            self.track_dom_p.addItem(start_line)
+            self.plot_corner_points()
+
+    # Rotation function for plotting track layout in official rotation
     def rotate(self, xy, *, angle):
         rot_mat = np.array([[np.cos(angle), np.sin(angle)],
                             [-np.sin(angle), np.cos(angle)]])
         return np.matmul(xy, rot_mat)
+    
+    # Plotting the Corner points on Track Domination Widget
+    def plot_corner_points(self):
+        offset_vector = [500, 0]
+        track_angle = self.circuit_info.rotation / 180 * np.pi
+        for _, corner in self.circuit_info.corners.iterrows():
+            # Create a string from corner number and letter
+            txt = pg.TextItem((f"{corner['Number']}{corner['Letter']}"), anchor=(0.5,0))
+
+            # Convert the angle from degrees to radian.
+            offset_angle = corner['Angle'] / 180 * np.pi
+
+            # Rotate the offset vector so that it points sideways from the track.
+            offset_x, offset_y = self.rotate(offset_vector, angle=offset_angle)
+
+            # Add the offset to the position of the corner
+            text_x = corner['X'] + offset_x
+            text_y = corner['Y'] + offset_y
+
+            # Rotate the text position equivalently to the rest of the track map
+            text_x, text_y = self.rotate([text_x, text_y], angle=track_angle)
+
+            # Finally, print the corner number inside the circle.
+            self.track_dom_p.addItem(txt)
+            txt.setPos(text_x, text_y)

@@ -8,22 +8,22 @@
 	border: none;
 }
 
-QScrollArea QScrollBar {
+QScrollBar {
 	background-color: #171718;
 }
 
-QScrollArea QScrollBar:handle {
+QScrollBar:handle {
 	background-color: #1e1e1f;
 	max-height: 50px;
 	border-radius: 6px;
 }
 
-QScrollArea QScrollBar::add-line:vertical {
+QScrollBar::add-line:vertical {
 	border: none;
 	background: none;
 }
 
-QScrollArea QScrollBar::sub-line:vertical {
+QScrollBar::sub-line:vertical {
 	border: none;
 	background: none;
 }
